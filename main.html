@@ -169,6 +169,9 @@ var kingPays      = [80,250,600];
 var queenPays     = [70,200,500];
 var jackPays      = [60,100,400];
 
+
+var paySummary = [snowflakePays, sunPays, sandglassPays, victoryPays, acePays, kingPays, queenPays, jackPays];
+
 var linePattern1 = [2,2,2,2,2];
 var linePattern2 = [1,1,1,1,1];
 var linePattern3 = [3,3,3,3,3];
@@ -192,6 +195,11 @@ var cat, hedgehog, tiger, animals, upbutton, downbutton, state;
 var reel1, reel2, reel3, reel4, reel5; 
 var betNum = 1;
 var balanceNum = 10000;//10000
+var currentSpinPayoutTotal;
+var currentSpinLinePatternWithPay = [0,0,0,0,0];
+var currentSpinPayFromEachPattern = [0,0,0,0,0];
+
+var symbolNames = ["snowflake","sun","sandglass","victory","ace","king","queen","jack"];
 var betNumMsg;
 var balaceNumMsg;
 var reel1CurrentSymbol = 0;
@@ -199,6 +207,8 @@ var reel2CurrentSymbol = 0;
 var reel3CurrentSymbol = 0;
 var reel4CurrentSymbol = 0;
 var reel5CurrentSymbol = 0;
+var lineNumber = 3;
+
 
 var reel1Layout = [1,5,2,1,6,5,8,5,1,2,3,7,4,5,8,1,4,3,2,5,6];
 var reel2Layout = [5,1,6,3,7,8,1,3,2,4,6,8,5,4,5,3,8,7,5,4,1,7,4,8,4];
@@ -206,19 +216,25 @@ var reel3Layout = [8,4,1,3,2,6,7,2,3,4,1,5,6,7,8,2,5,4,3,1,2,7,6,7,1,4,3,2,4];
 var reel4Layout = [1,7,4,2,3,8,4,3,2,5,6,7,2,3,4,5,8,1,2,6,2,4,2,6,3,7,8,4,6,2,3,1,2,5,6,3,4];
 var reel5Layout = [8,5,1];
 
+var reel1Current3Symbols = [0,1,2];
+var reel2Current3Symbols = [0,1,2];
+var reel3Current3Symbols = [0,1,2];
+var reel4Current3Symbols = [0,1,2];
+var reel5Current3Symbols = [0,1,2];
+
 var imageURLs = ["images/snowflake.png","images/sun.png","images/sandglass.png","images/victory.png",
                  "images/Ace.png","images/King.png","images/Queen.png","images/Jack.png"];
 
 var spinning = 0;
-var reel1CurrentSpinningNum = -1;
+var reel1CurrentSpinningNum = 0;
 var reel1CurrentGeneratedSpinningRound = -1;
-var reel2CurrentSpinningNum = -1;
+var reel2CurrentSpinningNum = 0;
 var reel2CurrentGeneratedSpinningRound = -1;
-var reel3CurrentSpinningNum = -1;
+var reel3CurrentSpinningNum = 0;
 var reel3CurrentGeneratedSpinningRound = -1;
-var reel4CurrentSpinningNum = -1;
+var reel4CurrentSpinningNum = 0;
 var reel4CurrentGeneratedSpinningRound = -1;
-var reel5CurrentSpinningNum = -1;
+var reel5CurrentSpinningNum = 0;
 var reel5CurrentGeneratedSpinningRound = -1;
 
 var currentMaxGeneratedSpinningRound = -1;
@@ -652,18 +668,31 @@ function play()
   // console.log("reel1CurrentSymbol: "+reel1CurrentSymbol);
   for(var i=0;i<reel1.children.length;i++)
   {
+
+
+
+
     var temp = reel1.children[i];
-    if(i == reel1CurrentSymbol)
+
+    // if(i in reel1Current3Symbols)
+    // {
+    //   temp.visible = true;
+    // }
+    // else{
+    //   temp.visible = false;
+    // }
+
+    if(i == reel1Current3Symbols[0])
     {
       temp.visible = true;
       temp.y = 250;
     }
-    else if(i == reel1CurrentSymbol + 1)
+    else if(i == reel1Current3Symbols[1])
     {
       temp.visible = true;
       temp.y = 250 + symbolHeight;
     }
-    else if(i == reel1CurrentSymbol + 2)
+    else if(i == reel1Current3Symbols[2])
     {
       temp.visible = true;
       temp.y = 250 + symbolHeight * 2;      
@@ -680,18 +709,19 @@ function play()
   for(var i=0;i<reel2.children.length;i++)
   {
     var temp = reel2.children[i];
-    if(i == reel2CurrentSymbol)
+
+    if(i == reel2Current3Symbols[0])
     {
       temp.visible = true;
             temp.y = 250;
     }
-    else if(i == reel2CurrentSymbol + 1)
+    else if(i == reel2Current3Symbols[1])
     {
       temp.visible = true;
             temp.y = 250 + symbolHeight;
 
     }
-    else if(i == reel2CurrentSymbol + 2)
+    else if(i == reel2Current3Symbols[2])
     {
       temp.visible = true;
             temp.y = 250 + symbolHeight * 2;      
@@ -708,19 +738,19 @@ function play()
   for(var i=0;i<reel3.children.length;i++)
   {
     var temp = reel3.children[i];
-    if(i == reel3CurrentSymbol)
+    if(i == reel3Current3Symbols[0])
     {
       temp.visible = true;
                   temp.y = 250;
 
     }
-    else if(i == reel3CurrentSymbol + 1)
+    else if(i == reel3Current3Symbols[1])
     {
       temp.visible = true;
                   temp.y = 250 + symbolHeight;
 
     }
-    else if(i == reel3CurrentSymbol + 2)
+    else if(i == reel3Current3Symbols[2])
     {
       temp.visible = true;
                   temp.y = 250 + symbolHeight * 2;      
@@ -736,22 +766,22 @@ function play()
   for(var i=0;i<reel4.children.length;i++)
   {
     var temp = reel4.children[i];
-    if(i == reel4CurrentSymbol)
+    if(i == reel4Current3Symbols[0])
     {
       temp.visible = true;
-                        temp.y = 250;
+      temp.y = 250;
 
     }
-    else if(i == reel4CurrentSymbol + 1)
+    else if(i == reel4Current3Symbols[1])
     {
       temp.visible = true;
-                        temp.y = 250 + symbolHeight;
+      temp.y = 250 + symbolHeight;
 
     }
-    else if(i == reel4CurrentSymbol + 2)
+    else if(i == reel4Current3Symbols[2])
     {
       temp.visible = true;
-                        temp.y = 250 + symbolHeight * 2;      
+      temp.y = 250 + symbolHeight * 2;      
 
     }
     else
@@ -764,19 +794,19 @@ function play()
   for(var i=0;i<reel5.children.length;i++)
   {
     var temp = reel5.children[i];
-    if(i == reel5CurrentSymbol)
+    if(i == reel5Current3Symbols[0])
     {
       temp.visible = true;
       temp.y = 250;
 
     }
-    else if(i == reel5CurrentSymbol + 1)
+    else if(i == reel5Current3Symbols[1])
     {
       temp.visible = true;
       temp.y = 250 + symbolHeight;
 
     }
-    else if(i == reel5CurrentSymbol + 2)
+    else if(i == reel5Current3Symbols[2])
     {
       temp.visible = true;
       temp.y = 250 + symbolHeight * 2;      
@@ -792,51 +822,255 @@ function play()
 
   if(spinning == 1)
   {
-    if(reel1CurrentSymbol + 1 != reel1.children.length - 1)
+
+    //REEL 1
+    if(reel1CurrentSpinningNum < reel1CurrentGeneratedSpinningRound)
     {
-      reel1CurrentSymbol = reel1CurrentSymbol + 1
+        if(reel1CurrentSymbol == reel1.children.length - 1)
+        {
+          reel1Current3Symbols = [0,1,2];
+          reel1CurrentSymbol = 0;
+        }
+        else if(reel1CurrentSymbol == reel1.children.length - 2)
+        {
+          reel1Current3Symbols = [reel1.children.length-1,0,1];
+          reel1CurrentSymbol = reel1.children.length - 1;
+
+        }
+        else if(reel1CurrentSymbol == reel1.children.length - 3)
+        {
+          reel1Current3Symbols = [reel1.children.length-2,reel1.children.length-1,0];
+          reel1CurrentSymbol = reel1.children.length - 2;
+        }
+        else
+        {
+          reel1Current3Symbols = [reel1CurrentSymbol+1,reel1CurrentSymbol+2,reel1CurrentSymbol+3];
+          reel1CurrentSymbol =  reel1CurrentSymbol + 1;
+        }
+        reel1CurrentSpinningNum = reel1CurrentSpinningNum + 1;
     }
     else
     {
-      reel1CurrentSymbol = 0;
+        // console.log("reel 1 finished spinning!");
     }
 
-    if(reel2CurrentSymbol + 1 != reel2.children.length - 1)
+    //REEL 2
+    if(reel2CurrentSpinningNum < reel2CurrentGeneratedSpinningRound)
     {
-      reel2CurrentSymbol = reel2CurrentSymbol + 1
+        if(reel2CurrentSymbol == reel2.children.length - 1)
+        {
+          reel2Current3Symbols = [0,1,2];
+          reel2CurrentSymbol = 0;
+        }
+        else if(reel2CurrentSymbol == reel2.children.length - 2)
+        {
+          reel2Current3Symbols = [reel2.children.length-1,0,1];
+          reel2CurrentSymbol = reel2.children.length - 1;
+
+        }
+        else if(reel2CurrentSymbol == reel2.children.length - 3)
+        {
+          reel2Current3Symbols = [reel2.children.length-2,reel2.children.length-1,0];
+          reel2CurrentSymbol = reel2.children.length - 2;
+        }
+        else
+        {
+          reel2Current3Symbols = [reel2CurrentSymbol+1,reel2CurrentSymbol+2,reel2CurrentSymbol+3];
+          reel2CurrentSymbol =  reel2CurrentSymbol + 1;
+        }
+
+        reel2CurrentSpinningNum = reel2CurrentSpinningNum + 1;
+
     }
     else
     {
-      reel2CurrentSymbol = 0;
+        // console.log("reel 2 finished spinning!");
+
+    }
+    //REEL 3
+    if(reel3CurrentSpinningNum < reel3CurrentGeneratedSpinningRound)
+    {
+        if(reel3CurrentSymbol == reel3.children.length - 1)
+        {
+          reel3Current3Symbols = [0,1,2];
+          reel3CurrentSymbol = 0;
+        }
+        else if(reel3CurrentSymbol == reel3.children.length - 2)
+        {
+          reel3Current3Symbols = [reel3.children.length-1,0,1];
+          reel3CurrentSymbol = reel3.children.length - 1;
+
+        }
+        else if(reel3CurrentSymbol == reel3.children.length - 3)
+        {
+          reel3Current3Symbols = [reel3.children.length-2,reel3.children.length-1,0];
+          reel3CurrentSymbol = reel3.children.length - 2;
+        }
+        else
+        {
+          reel3Current3Symbols = [reel3CurrentSymbol+1,reel3CurrentSymbol+2,reel3CurrentSymbol+3];
+          reel3CurrentSymbol =  reel3CurrentSymbol + 1;
+        }
+
+        reel3CurrentSpinningNum = reel3CurrentSpinningNum + 1; 
+    }
+    else
+    {
+        // console.log("reel 3 finished spinning!");
+
+    }
+    //REEL 4
+    if(reel4CurrentSpinningNum < reel4CurrentGeneratedSpinningRound)
+    {
+        if(reel4CurrentSymbol == reel4.children.length - 1)
+        {
+          reel4Current3Symbols = [0,1,2];
+          reel4CurrentSymbol = 0;
+        }
+        else if(reel4CurrentSymbol == reel4.children.length - 2)
+        {
+          reel4Current3Symbols = [reel4.children.length-1,0,1];
+          reel4CurrentSymbol = reel4.children.length - 1;
+
+        }
+        else if(reel4CurrentSymbol == reel4.children.length - 3)
+        {
+          reel4Current3Symbols = [reel4.children.length-2,reel4.children.length-1,0];
+          reel4CurrentSymbol = reel4.children.length - 2;
+        }
+        else
+        {
+          reel4Current3Symbols = [reel4CurrentSymbol+1,reel4CurrentSymbol+2,reel4CurrentSymbol+3];
+          reel4CurrentSymbol =  reel4CurrentSymbol + 1;
+        }
+        reel4CurrentSpinningNum = reel4CurrentSpinningNum + 1;
+    }
+    else
+    {
+        // console.log("reel 4 finished spinning!");
+
+    }
+    //REEL 5
+    if(reel5CurrentSpinningNum < reel5CurrentGeneratedSpinningRound)
+    {
+        if(reel5CurrentSymbol == reel5.children.length - 1)
+        {
+          reel5Current3Symbols = [0,1,2];
+          reel5CurrentSymbol = 0;
+        }
+        else if(reel5CurrentSymbol == reel5.children.length - 2)
+        {
+          reel5Current3Symbols = [reel5.children.length-1,0,1];
+          reel5CurrentSymbol = reel5.children.length - 1;
+
+        }
+        else if(reel5CurrentSymbol == reel5.children.length - 3)
+        {
+          reel5Current3Symbols = [reel5.children.length-2,reel5.children.length-1,0];
+          reel5CurrentSymbol = reel5.children.length - 2;
+        }
+        else
+        {
+          reel5Current3Symbols = [reel5CurrentSymbol+1,reel5CurrentSymbol+2,reel5CurrentSymbol+3];
+          reel5CurrentSymbol =  reel5CurrentSymbol + 1;
+        }
+        reel5CurrentSpinningNum = reel5CurrentSpinningNum + 1;
+    }
+    else
+    {
+        // console.log("reel 5 finished spinning!");
     }
 
-    if(reel3CurrentSymbol + 1 != reel3.children.length - 1)
+    if(reel1CurrentSpinningNum == reel1CurrentGeneratedSpinningRound
+    && reel2CurrentSpinningNum == reel2CurrentGeneratedSpinningRound
+    && reel3CurrentSpinningNum == reel3CurrentGeneratedSpinningRound 
+    && reel4CurrentSpinningNum == reel4CurrentGeneratedSpinningRound   
+    && reel5CurrentSpinningNum == reel5CurrentGeneratedSpinningRound
+    )
     {
-      reel3CurrentSymbol = reel3CurrentSymbol + 1
-    }
-    else
-    {
-      reel3CurrentSymbol = 0;
-    }
 
-    if(reel4CurrentSymbol + 1 != reel4.children.length - 1)
-    {
-      reel4CurrentSymbol = reel4CurrentSymbol + 1
-    }
-    else
-    {
-      reel4CurrentSymbol = 0;
-    }
+        reel1CurrentSpinningNum = 0;
+        reel2CurrentSpinningNum = 0;
+        reel3CurrentSpinningNum = 0;
+        reel4CurrentSpinningNum = 0;
+        reel5CurrentSpinningNum = 0;
 
-    if(reel5CurrentSymbol + 1 != reel5.children.length - 1)
-    {
-      reel5CurrentSymbol = reel5CurrentSymbol + 1
+        var currentLinePattern1 = [0,0,0,0,0];
+        currentLinePattern1[0] = reel1Current3Symbols[1];
+        currentLinePattern1[1] = reel2Current3Symbols[1];
+        currentLinePattern1[2] = reel3Current3Symbols[1];
+        currentLinePattern1[3] = reel4Current3Symbols[1];
+        currentLinePattern1[4] = reel5Current3Symbols[1];
+
+        var currentLinePattern2 = [0,0,0,0,0];
+        currentLinePattern2[0] = reel1Current3Symbols[0];
+        currentLinePattern2[1] = reel2Current3Symbols[0];
+        currentLinePattern2[2] = reel3Current3Symbols[0];
+        currentLinePattern2[3] = reel4Current3Symbols[0];
+        currentLinePattern2[4] = reel5Current3Symbols[0];
+
+        var currentLinePattern3 = [0,0,0,0,0];
+        currentLinePattern3[0] = reel1Current3Symbols[2];
+        currentLinePattern3[1] = reel2Current3Symbols[2];
+        currentLinePattern3[2] = reel3Current3Symbols[2];
+        currentLinePattern3[3] = reel4Current3Symbols[2];
+        currentLinePattern3[3] = reel5Current3Symbols[2];
+
+        var currentLinePattern4 = [0,0,0,0,0];
+        currentLinePattern4[0] = reel1Current3Symbols[0];
+        currentLinePattern4[1] = reel2Current3Symbols[1];
+        currentLinePattern4[2] = reel3Current3Symbols[2];
+        currentLinePattern4[3] = reel4Current3Symbols[1];
+        currentLinePattern4[4] = reel5Current3Symbols[0];
+
+        var currentLinePattern5 = [0,0,0,0,0];
+        currentLinePattern5[0] = reel1Current3Symbols[2];
+        currentLinePattern5[1] = reel2Current3Symbols[1];
+        currentLinePattern5[2] = reel3Current3Symbols[0];
+        currentLinePattern5[3] = reel4Current3Symbols[1];
+        currentLinePattern5[4] = reel5Current3Symbols[2];                            
+
+        var allLinePatterns = [currentLinePattern1, currentLinePattern2,currentLinePattern3,currentLinePattern4,currentLinePattern5];
+
+        var numberOfSnowFlake = 0;
+        var numberOfSun = 0;
+        var numberOfSandglass = 0;
+        var numberOfVictory = 0;
+        var numberOfAce = 0;
+        var numberOfKing = 0;
+        var numberOfQueen = 0;
+        var numberOfJack = 0;
+        var numberOfEachSymbol = [0,0,0,0,0,0,0,0];
+        var possibleSymbolValueNum = 8;
+
+        for(var i = 0; i < allLinePatterns.length;i++)
+        {
+            for(var a = 0; a < allLinePatterns[i].length; a++)
+            {
+                for(var c=0;c<possibleSymbolValueNum; c++)
+                {
+                    if(allLinePatterns[i][a] == c+1)
+                    {
+                        numberOfEachSymbol[c] = numberOfEachSymbol[c] + 1;
+                        // break;
+                    }
+                }
+
+            }
+            for(var d = 0; d< numberOfEachSymbol.length; d++)
+            {
+                if(numberOfEachSymbol[d] >=3)
+                {
+                   console.log("pattern ",i," has one symbol of number more than 3: ",symbolNames[d],", count: ", numberOfEachSymbol[d]);
+                  //  break; 
+                }
+            }
+            numberOfEachSymbol = [0,0,0,0,0,0,0,0];
+        }
+
+
+        spinning = 0;
     }
-    else
-    {
-      reel5CurrentSymbol = 0;
-    }
-    // console.log(reel5CurrentSymbol);
 
   }
 
@@ -951,14 +1185,18 @@ function onClickSpin () {
     balanceNum = balanceNum - betNum;
     balaceNumMsg.text = "$"+balanceNum+".00";
 
-    reel1CurrentGeneratedSpinningRound = randomInt(1, 15);
-    reel2CurrentGeneratedSpinningRound = randomInt(1, 15);
-    reel3CurrentGeneratedSpinningRound = randomInt(1, 15);
-    reel4CurrentGeneratedSpinningRound = randomInt(1, 15);
-    reel5CurrentGeneratedSpinningRound = randomInt(1, 15);
+    reel1CurrentGeneratedSpinningRound = randomInt(1, 100);
+    reel2CurrentGeneratedSpinningRound = randomInt(1, 100);
+    reel3CurrentGeneratedSpinningRound = randomInt(1, 100);
+    reel4CurrentGeneratedSpinningRound = randomInt(1, 100);
+    reel5CurrentGeneratedSpinningRound = randomInt(1, 100);
 
-    currentMaxGeneratedSpinningRound = Math.max(reel1CurrentGeneratedSpinningRound, reel2CurrentGeneratedSpinningRound, reel3CurrentGeneratedSpinningRound
-    ,reel4CurrentGeneratedSpinningRound,reel5CurrentGeneratedSpinningRound);
+    // currentMaxGeneratedSpinningRound = Math.max(
+    // reel1CurrentGeneratedSpinningRound, 
+    // reel2CurrentGeneratedSpinningRound, 
+    // reel3CurrentGeneratedSpinningRound,
+    // reel4CurrentGeneratedSpinningRound,
+    // reel5CurrentGeneratedSpinningRound);
 
     // console.log("reel1CurrentGeneratedSpinningRound: ", reel1CurrentGeneratedSpinningRound);
     // console.log("reel2CurrentGeneratedSpinningRound: ", reel2CurrentGeneratedSpinningRound);
