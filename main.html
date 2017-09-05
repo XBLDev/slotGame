@@ -1,0 +1,995 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Slot Game</title>
+
+
+  <style>* {padding: 0; margin: 0}</style>
+
+</head>
+  <script src="pixi.min.js"></script>
+<body>
+  <script type="text/javascript">
+
+//Aliases
+var Container = PIXI.Container,
+    autoDetectRenderer = PIXI.autoDetectRenderer,
+    loader = PIXI.loader,
+    TextureCache = PIXI.utils.TextureCache,
+    Rectangle = PIXI.Rectangle,
+    resources = PIXI.loader.resources,
+    Sprite = PIXI.Sprite;
+
+
+var dungeon, explorer, treasure, door, id;
+
+// var texture = TextureCache["images/tileset.png"];
+// var rectangle = new Rectangle(192, 128, 64, 64);
+// texture.frame = rectangle;
+// var rocket = new Sprite(texture);
+// rocket.x = 80;
+// rocket.y = 80;
+
+//Create the renderer
+renderer = autoDetectRenderer(window.innerWidth, window.innerHeight);//256,256
+renderer.view.style.border = "5px black";
+renderer.backgroundColor = 0xffffff;
+// renderer.autoResize = true;
+// renderer.resize(512, 512);
+renderer.view.style.position = "absolute";
+// renderer.view.style.display = "block";
+renderer.autoResize = true;
+renderer.resize(window.innerWidth, window.innerHeight);
+
+
+//Add the canvas to the HTML document
+document.body.appendChild(renderer.view);
+
+//Create a container object called the `stage`
+var stage = new Container();
+// stage.addChild(rocket);
+
+loader.add("images/treasureHunter.json").load(setupTextureAtlas);
+
+function setupTextureAtlas()
+{
+  //There are 3 ways to make sprites from textures atlas frames
+
+  //1. Access the `TextureCache` directly
+  var dungeonTexture = TextureCache["dungeon.png"];
+  dungeon = new Sprite(dungeonTexture);
+  // stage.addChild(dungeon);
+
+  //2. Access the texture using throuhg the loader's `resources`:
+  explorer = new Sprite(
+    resources["images/treasureHunter.json"].textures["explorer.png"]
+  );
+  explorer.x = 68;
+
+  //Center the explorer vertically
+  explorer.y = stage.height / 2 - explorer.height / 2;
+  // stage.addChild(explorer);
+
+  //3. Create an optional alias called `id` for all the texture atlas 
+  //frame id textures.
+  id = PIXI.loader.resources["images/treasureHunter.json"].textures; 
+  
+  //Make the treasure box using the alias
+  treasure = new Sprite(id["treasure.png"]);
+  // stage.addChild(treasure);
+
+  //Position the treasure next to the right edge of the canvas
+  treasure.x = stage.width - treasure.width - 48;
+  treasure.y = stage.height / 2 - treasure.height / 2;
+  // stage.addChild(treasure);
+
+  //Make the exit door
+  door = new Sprite(id["door.png"]); 
+  door.position.set(32, 0);
+  // stage.addChild(door);
+
+  //Make the blobs
+  var numberOfBlobs = 6,
+      spacing = 48,
+      xOffset = 150;
+
+  //Make as many blobs as there are `numberOfBlobs`
+  for (var i = 0; i < numberOfBlobs; i++) {
+
+    //Make a blob
+    var blob = new Sprite(id["blob.png"]);
+
+    //Space each blob horizontally according to the `spacing` value.
+    //`xOffset` determines the point from the left of the screen
+    //at which the first blob should be added.
+    var x = spacing * i + xOffset;
+
+    //Give the blob a random y position
+    //(`randomInt` is a custom function - see below)
+    var y = randomInt(0, stage.height - blob.height);
+
+    //Set the blob's position
+    blob.x = x;
+    blob.y = y;
+
+    //Add the blob sprite to the stage
+    // stage.addChild(blob);
+  }
+
+  //Render the stage   
+  // renderer.render(stage);
+}
+
+
+
+loader.add("images/tileset.png").load(setupTileset);
+
+function setupTileset() 
+{
+
+  //Create the `tileset` sprite from the texture
+  var texture = TextureCache["images/tileset.png"];
+
+  //Create a rectangle object that defines the position and
+  //size of the sub-image you want to extract from the texture
+  var rectangle = new Rectangle(192, 128, 64, 64);
+
+  //Tell the texture to use that rectangular section
+  texture.frame = rectangle;
+
+  //Create the sprite from the texture
+  var rocket = new Sprite(texture);
+
+  //Position the rocket sprite on the canvas
+  rocket.x = 180;
+  rocket.y = 180;
+
+  //Optionally use `pivot` to move the sprite's x and y position
+  /*
+  rocket.pivot.set(32, 32);
+  rocket.rotation = 0.3;
+  console.log(rocket.position)
+  */
+
+  //Add the rocket to the stage
+  // stage.addChild(rocket);
+  
+  //Render the stage   
+  // renderer.render(stage);
+}  
+
+
+var snowflakePays = [250,500,1000];
+var sunPays       = [250,450,800];
+var sandglassPays = [150,400,700];
+var victoryPays   = [100,350,600];
+var acePays       = [90,300,700];
+var kingPays      = [80,250,600];
+var queenPays     = [70,200,500];
+var jackPays      = [60,100,400];
+
+var linePattern1 = [2,2,2,2,2];
+var linePattern2 = [1,1,1,1,1];
+var linePattern3 = [3,3,3,3,3];
+var linePattern4 = [1,2,3,2,1];
+var linePattern5 = [3,2,1,2,3];
+
+
+
+
+loader.add("images/cat.png").add("images/up.png").
+add("images/down.png").add("images/snowflake.png").
+add("images/sandglass.png").add("images/sun.png").
+add("images/victory.png").
+add("images/Ace.png").
+add("images/King.png").
+add("images/Queen.png").
+add("images/Jack.png").
+load(setup);
+
+var cat, hedgehog, tiger, animals, upbutton, downbutton, state;
+var reel1, reel2, reel3, reel4, reel5; 
+var betNum = 1;
+var balanceNum = 10000;//10000
+var betNumMsg;
+var balaceNumMsg;
+var reel1CurrentSymbol = 0;
+var reel2CurrentSymbol = 0;
+var reel3CurrentSymbol = 0;
+var reel4CurrentSymbol = 0;
+var reel5CurrentSymbol = 0;
+
+var reel1Layout = [1,5,2,1,6,5,8,5,1,2,3,7,4,5,8,1,4,3,2,5,6];
+var reel2Layout = [5,1,6,3,7,8,1,3,2,4,6,8,5,4,5,3,8,7,5,4,1,7,4,8,4];
+var reel3Layout = [8,4,1,3,2,6,7,2,3,4,1,5,6,7,8,2,5,4,3,1,2,7,6,7,1,4,3,2,4];
+var reel4Layout = [1,7,4,2,3,8,4,3,2,5,6,7,2,3,4,5,8,1,2,6,2,4,2,6,3,7,8,4,6,2,3,1,2,5,6,3,4];
+var reel5Layout = [8,5,1];
+
+var imageURLs = ["images/snowflake.png","images/sun.png","images/sandglass.png","images/victory.png",
+                 "images/Ace.png","images/King.png","images/Queen.png","images/Jack.png"];
+
+var spinning = 0;
+var reel1CurrentSpinningNum = -1;
+var reel1CurrentGeneratedSpinningRound = -1;
+var reel2CurrentSpinningNum = -1;
+var reel2CurrentGeneratedSpinningRound = -1;
+var reel3CurrentSpinningNum = -1;
+var reel3CurrentGeneratedSpinningRound = -1;
+var reel4CurrentSpinningNum = -1;
+var reel4CurrentGeneratedSpinningRound = -1;
+var reel5CurrentSpinningNum = -1;
+var reel5CurrentGeneratedSpinningRound = -1;
+
+var currentMaxGeneratedSpinningRound = -1;
+
+var symbolWidth = 25;
+var symbolHeight = 25;
+var reel1startX = 50;
+
+
+function setup(){
+  // console.log("first ele: ", imageURLs[5]);
+
+
+
+
+
+  animals = new Container();
+  reel1 = new Container();
+  reel2 = new Container();
+  reel3 = new Container();
+  reel4 = new Container();
+  reel5 = new Container();
+
+
+  for(var i=0; i< reel1Layout.length;i++)
+  {
+    var currentSymbolNum = reel1Layout[i];
+    var currentSymbol =  new Sprite(resources[imageURLs[currentSymbolNum-1]].texture);
+    currentSymbol.width = symbolWidth;
+    currentSymbol.height = symbolHeight;
+    currentSymbol.x = reel1startX;
+    currentSymbol.y = 250 + i * symbolHeight;
+    if(i==0 || i==1 || i==2)
+    {
+      currentSymbol.visible = true;
+    }
+    else
+    {
+      currentSymbol.visible = false;
+    }    
+    reel1.addChild(currentSymbol);
+    // console.log("ele: ", reel1Layout[i]);
+  }
+
+
+  for(var i=0; i< reel2Layout.length;i++)
+  {
+    var currentSymbolNum = reel2Layout[i];
+    var currentSymbol =  new Sprite(resources[imageURLs[currentSymbolNum-1]].texture);
+    currentSymbol.width = symbolWidth;
+    currentSymbol.height = symbolHeight;
+    currentSymbol.x = reel1startX + symbolWidth * 1;
+    currentSymbol.y = 250 + i * symbolHeight;
+    if(i==0 || i==1 || i==2)
+    {
+      currentSymbol.visible = true;
+    }
+    else
+    {
+      currentSymbol.visible = false;
+    }
+
+
+    reel2.addChild(currentSymbol);
+    // console.log("ele: ", reel1Layout[i]);
+  }
+
+  for(var i=0; i< reel3Layout.length;i++)
+  {
+    var currentSymbolNum = reel3Layout[i];
+    var currentSymbol =  new Sprite(resources[imageURLs[currentSymbolNum-1]].texture);
+    currentSymbol.width = symbolWidth;
+    currentSymbol.height = symbolHeight;
+    currentSymbol.x = reel1startX + symbolWidth * 2;
+    currentSymbol.y = 250 + i * symbolHeight;
+    if(i==0 || i==1 || i==2)
+    {
+      currentSymbol.visible = true;
+    }
+    else
+    {
+      currentSymbol.visible = false;
+    }
+
+
+    reel3.addChild(currentSymbol);
+    // console.log("ele: ", reel1Layout[i]);
+  }
+
+
+  for(var i=0; i< reel4Layout.length;i++)
+  {
+    var currentSymbolNum = reel4Layout[i];
+    var currentSymbol =  new Sprite(resources[imageURLs[currentSymbolNum-1]].texture);
+    currentSymbol.width = symbolWidth;
+    currentSymbol.height = symbolHeight;
+    currentSymbol.x = reel1startX + symbolWidth * 3;
+    currentSymbol.y = 250 + i * symbolHeight;
+    if(i==0 || i==1 || i==2)
+    {
+      currentSymbol.visible = true;
+    }
+    else
+    {
+      currentSymbol.visible = false;
+    }
+
+
+    reel4.addChild(currentSymbol);
+    // console.log("ele: ", reel1Layout[i]);
+  }  
+
+
+  for(var i=0; i< reel5Layout.length;i++)
+  {
+    var currentSymbolNum = reel5Layout[i];
+    var currentSymbol =  new Sprite(resources[imageURLs[currentSymbolNum-1]].texture);
+    currentSymbol.width = symbolWidth;
+    currentSymbol.height = symbolHeight;
+    currentSymbol.x = reel1startX + symbolWidth * 4;
+    currentSymbol.y = 250 + i * symbolHeight;
+    if(i==0 || i==1 || i==2)
+    {
+      currentSymbol.visible = true;
+    }
+    else
+    {
+      currentSymbol.visible = false;
+    }
+
+
+    reel5.addChild(currentSymbol);
+    // console.log("ele: ", reel1Layout[i]);
+  }    
+
+  // for(var i=0;i<reel1.children.length;i++)
+  // {
+  //   var temp = reel1.children[i];
+  //   if(i == reel1CurrentSymbol)
+  //   {
+  //     temp.visible = true;
+  //   }
+  //   else if(i == reel1CurrentSymbol + 1)
+  //   {
+  //     temp.visible = true;
+  //   }
+  //   else if(i == reel1CurrentSymbol + 2)
+  //   {
+  //     temp.visible = true;
+  //   }
+  //   else
+  //   {
+  //     temp.visible = false;
+  //   }
+  //   // console.log("x: "+temp.x);
+  // }
+
+
+
+
+
+
+  stage.addChild(reel1);
+  stage.addChild(reel2);
+  stage.addChild(reel3);
+  stage.addChild(reel4);
+  stage.addChild(reel5);
+
+
+
+
+  cat = new Sprite(resources["images/cat.png"].texture);
+  //Change the sprite's position
+  cat.x = 96;
+  cat.y = 96;
+  //Change the sprite's size
+  cat.width = 80;
+  cat.height = 120;
+  cat.scale.set(2, 2);
+
+  // Opt-in to interactivity
+  cat.interactive = true;
+// Shows hand cursor
+  cat.buttonMode = true;
+  // cat.on('pointerdown',onClick);
+  // sprite.on('tap', onClick); // touch-only
+  cat.on('click', onClick); // mouse-only
+
+  // cat.anchor.x = 0.5;
+  // cat.anchor.y = 0.5;
+  // cat.rotation = 0.5;
+  //Initialize the cat's velocity variables
+  // cat.vx = 0;
+  // cat.vy = 0;
+
+  //The hedgehog
+  hedgehog = new Sprite(resources["images/cat.png"].texture);
+  // hedgehog.position.set(116, 116);
+  hedgehog.x = 126;
+  hedgehog.y = 126;
+  hedgehog.width = 80;
+  hedgehog.height = 120;
+
+  //The tiger
+  tiger = new Sprite(resources["images/cat.png"].texture);
+  // tiger.position.set(136, 136);
+  tiger.x = 156;
+  tiger.y = 156;  
+  tiger.width = 80;
+  tiger.height = 120;
+
+  // animals.addChild(cat);
+  // animals.addChild(hedgehog);
+  // animals.addChild(tiger);
+  // animals.x = 100;
+  // animals.y = 100;
+  // animals.vx = 0;
+  // animals.vy = 0;
+
+
+// var sprite = PIXI.Sprite.fromImage('required/assets/basics/bunny.png');
+// http://www.riocog.org/Pics/UpArrow.jpg
+  // upButton = PIXI.Sprite.fromImage('images/upButtonImg.png');
+  upbutton = new Sprite(resources["images/up.png"].texture);
+  upbutton.x = 350;
+  upbutton.y = 500+300;
+  upbutton.width = 80;//80
+  upbutton.height = 100;//100
+  upbutton.interactive = true;
+  upbutton.buttonMode = true;
+  upbutton.on('click', onClickUp); // mouse-only
+  stage.addChild(upbutton);
+
+  downbutton = new Sprite(resources["images/down.png"].texture);
+  downbutton.x = 350;
+  downbutton.y = 500 + 100+300;
+  downbutton.width = 80;//80
+  downbutton.height = 100;//100
+  downbutton.interactive = true;
+  downbutton.buttonMode = true;
+  downbutton.on('click', onClickDown); // mouse-only  
+  stage.addChild(downbutton);
+  
+
+  // stage.addChild(animals);
+  // renderer.render(stage);
+  var message = new PIXI.Text("WIN",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  message.style = {wordWrap: true, wordWrapWidth: 50, wordWrapHeight: 32};
+  message.position.set(500+150-25, 50-16);
+
+  var currentWinPriceMsg = new PIXI.Text("$0.00",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  currentWinPriceMsg.style = {wordWrap: true, wordWrapWidth: 50, wordWrapHeight: 32};
+  currentWinPriceMsg.position.set(500+150-25, 150-16);
+
+  var balanceMsg = new PIXI.Text("BALANCE",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  balanceMsg.style = {wordWrap: true, wordWrapWidth: 100, wordWrapHeight: 32};
+  balanceMsg.position.set(500+150-50, 50-16+500+300);
+
+  balaceNumMsg = new PIXI.Text("$"+balanceNum+".00",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  balaceNumMsg.style = {wordWrap: true, wordWrapWidth: 100, wordWrapHeight: 32};
+  balaceNumMsg.position.set(500+150-50, 150-16+500+300);
+
+  var betMsg = new PIXI.Text("BET",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  betMsg.style = {wordWrap: true, wordWrapWidth: 50, wordWrapHeight: 32};
+  betMsg.position.set(50 + 150-25, 50-16+500+300);
+
+  betNumMsg = new PIXI.Text("$"+betNum+".00",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  betNumMsg.style = {wordWrap: true, wordWrapWidth: 50, wordWrapHeight: 32};
+  betNumMsg.position.set(50 + 150-25, 150-16+500+300);
+
+  spinBtntext = new PIXI.Text("SPIN",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  spinBtntext.style = {wordWrap: true, wordWrapWidth: 50, wordWrapHeight: 32};
+  spinBtntext.position.set(950 + 150-25, 600-16+300);
+
+  // message.x = 54;
+  // message.y = 96;
+
+  var winrectangle = new PIXI.Graphics();
+  winrectangle.beginFill(0xD3D3D3);
+  winrectangle.lineStyle(2, 0x000000, 1);
+  winrectangle.drawRect(500,0,300,100);
+  winrectangle.endFill();
+  stage.addChild(winrectangle);
+
+  var winPriceRectangle = new PIXI.Graphics();
+  winrectangle.beginFill(0xFFFFFF);
+  winrectangle.lineStyle(2, 0x000000, 1);
+  winrectangle.drawRect(500,100,300,100);
+  winrectangle.endFill();
+  stage.addChild(winrectangle);
+
+  var balancerectangle = new PIXI.Graphics();
+  balancerectangle.beginFill(0xD3D3D3);
+  balancerectangle.lineStyle(2, 0x000000, 1);
+  balancerectangle.drawRect(500,0 + 500+300,300,100);
+  balancerectangle.endFill();
+  stage.addChild(balancerectangle);
+
+  var balanceNumrectangle = new PIXI.Graphics();
+  balanceNumrectangle.beginFill(0xFFFFFF);
+  balanceNumrectangle.lineStyle(2, 0x000000, 1);
+  balanceNumrectangle.drawRect(500,100+500+300,300,100);
+  balanceNumrectangle.endFill();
+  stage.addChild(balanceNumrectangle);
+
+  var betrectangle = new PIXI.Graphics();
+  betrectangle.beginFill(0xD3D3D3);
+  betrectangle.lineStyle(2, 0x000000, 1);
+  betrectangle.drawRect(50,0 + 500+300,300,100);
+  betrectangle.endFill();
+  stage.addChild(betrectangle);
+
+  var betNumrectangle = new PIXI.Graphics();
+  betNumrectangle.beginFill(0xFFFFFF);
+  betNumrectangle.lineStyle(2, 0x000000, 1);
+  betNumrectangle.drawRect(50,100+500+300,300,100);
+  betNumrectangle.endFill();
+  stage.addChild(betNumrectangle);
+
+  var spinBtnrectangle = new PIXI.Graphics();
+  spinBtnrectangle.beginFill(0xD3D3D3);
+  spinBtnrectangle.lineStyle(2, 0x000000, 1);
+  spinBtnrectangle.drawRect(950,0+500+300,300,200);
+  spinBtnrectangle.endFill();
+  spinBtnrectangle.interactive = true;
+  spinBtnrectangle.buttonMode = true;
+  spinBtnrectangle.on('click', onClickSpin); // mouse-only  
+  stage.addChild(spinBtnrectangle);
+
+
+
+  stage.addChild(message);
+  stage.addChild(currentWinPriceMsg);
+  stage.addChild(balanceMsg);
+  stage.addChild(balaceNumMsg);
+  stage.addChild(betMsg);
+  stage.addChild(betNumMsg);
+  stage.addChild(spinBtntext);
+
+  
+  state = play;
+  // //Capture the keyboard arrow keys
+  // var left = keyboard(37),
+  //     up = keyboard(38),
+  //     right = keyboard(39),
+  //     down = keyboard(40);
+
+  // //Left arrow key `press` method
+  // left.press = function() {
+
+  //   //Change the cat's velocity when the key is pressed
+  //   animals.vx = -5;
+  //   animals.vy = 0;
+  // };
+
+  // //Left arrow key `release` method
+  // left.release = function() {
+
+  //   //If the left arrow has been released, and the right arrow isn't down,
+  //   //and the cat isn't moving vertically:
+  //   //Stop the cat
+  //   if (!right.isDown && animals.vy === 0) {
+  //     animals.vx = 0;
+  //   }
+  // };
+
+  // //Up
+  // up.press = function() {
+  //   animals.vy = -5;
+  //   animals.vx = 0;
+  // };
+  // up.release = function() {
+  //   if (!down.isDown && animals.vx === 0) {
+  //     animals.vy = 0;
+  //   }
+  // };
+
+  // //Right
+  // right.press = function() {
+  //   animals.vx = 5;
+  //   animals.vy = 0;
+  // };
+  // right.release = function() {
+  //   if (!left.isDown && animals.vy === 0) {
+  //     animals.vx = 0;
+  //   }
+  // };
+
+  // //Down
+  // down.press = function() {
+  //   animals.vy = 5;
+  //   animals.vx = 0;
+  // };
+  // down.release = function() {
+  //   if (!up.isDown && animals.vx === 0) {
+  //     animals.vy = 0;
+  //   }
+  // };  
+
+  // renderer.render(stage);
+  gameLoop();
+}
+
+  // renderer.render(stage);
+
+
+
+
+function gameLoop() {
+
+  //Loop this function at 60 frames per second
+  requestAnimationFrame(gameLoop);
+  state();
+
+  // cat.vx = 1;
+  // cat.vy = 1;
+
+  // //Move the cat 1 pixel to the right each frame
+  // cat.x += cat.vx;
+  // cat.y += cat.vy;
+  //Render the stage to see the animation
+  renderer.render(stage);
+}
+
+
+function play()
+{
+
+
+
+  // console.log("reel1CurrentSymbol: "+reel1CurrentSymbol);
+  for(var i=0;i<reel1.children.length;i++)
+  {
+    var temp = reel1.children[i];
+    if(i == reel1CurrentSymbol)
+    {
+      temp.visible = true;
+      temp.y = 250;
+    }
+    else if(i == reel1CurrentSymbol + 1)
+    {
+      temp.visible = true;
+      temp.y = 250 + symbolHeight;
+    }
+    else if(i == reel1CurrentSymbol + 2)
+    {
+      temp.visible = true;
+      temp.y = 250 + symbolHeight * 2;      
+    }
+    else
+    {
+      temp.visible = false;
+    }
+    // console.log("x: "+temp.x);
+  }
+
+
+
+  for(var i=0;i<reel2.children.length;i++)
+  {
+    var temp = reel2.children[i];
+    if(i == reel2CurrentSymbol)
+    {
+      temp.visible = true;
+            temp.y = 250;
+    }
+    else if(i == reel2CurrentSymbol + 1)
+    {
+      temp.visible = true;
+            temp.y = 250 + symbolHeight;
+
+    }
+    else if(i == reel2CurrentSymbol + 2)
+    {
+      temp.visible = true;
+            temp.y = 250 + symbolHeight * 2;      
+
+    }
+    else
+    {
+      temp.visible = false;
+    }
+    // console.log("x: "+temp.x);
+  }  
+
+
+  for(var i=0;i<reel3.children.length;i++)
+  {
+    var temp = reel3.children[i];
+    if(i == reel3CurrentSymbol)
+    {
+      temp.visible = true;
+                  temp.y = 250;
+
+    }
+    else if(i == reel3CurrentSymbol + 1)
+    {
+      temp.visible = true;
+                  temp.y = 250 + symbolHeight;
+
+    }
+    else if(i == reel3CurrentSymbol + 2)
+    {
+      temp.visible = true;
+                  temp.y = 250 + symbolHeight * 2;      
+
+    }
+    else
+    {
+      temp.visible = false;
+    }
+    // console.log("x: "+temp.x);
+  }  
+
+  for(var i=0;i<reel4.children.length;i++)
+  {
+    var temp = reel4.children[i];
+    if(i == reel4CurrentSymbol)
+    {
+      temp.visible = true;
+                        temp.y = 250;
+
+    }
+    else if(i == reel4CurrentSymbol + 1)
+    {
+      temp.visible = true;
+                        temp.y = 250 + symbolHeight;
+
+    }
+    else if(i == reel4CurrentSymbol + 2)
+    {
+      temp.visible = true;
+                        temp.y = 250 + symbolHeight * 2;      
+
+    }
+    else
+    {
+      temp.visible = false;
+    }
+    // console.log("x: "+temp.x);
+  }  
+
+  for(var i=0;i<reel5.children.length;i++)
+  {
+    var temp = reel5.children[i];
+    if(i == reel5CurrentSymbol)
+    {
+      temp.visible = true;
+      temp.y = 250;
+
+    }
+    else if(i == reel5CurrentSymbol + 1)
+    {
+      temp.visible = true;
+      temp.y = 250 + symbolHeight;
+
+    }
+    else if(i == reel5CurrentSymbol + 2)
+    {
+      temp.visible = true;
+      temp.y = 250 + symbolHeight * 2;      
+
+    }
+    else
+    {
+      temp.visible = false;
+    }
+    // console.log("x: "+temp.x);
+  }  
+
+
+  if(spinning == 1)
+  {
+    if(reel1CurrentSymbol + 1 != reel1.children.length - 1)
+    {
+      reel1CurrentSymbol = reel1CurrentSymbol + 1
+    }
+    else
+    {
+      reel1CurrentSymbol = 0;
+    }
+
+    if(reel2CurrentSymbol + 1 != reel2.children.length - 1)
+    {
+      reel2CurrentSymbol = reel2CurrentSymbol + 1
+    }
+    else
+    {
+      reel2CurrentSymbol = 0;
+    }
+
+    if(reel3CurrentSymbol + 1 != reel3.children.length - 1)
+    {
+      reel3CurrentSymbol = reel3CurrentSymbol + 1
+    }
+    else
+    {
+      reel3CurrentSymbol = 0;
+    }
+
+    if(reel4CurrentSymbol + 1 != reel4.children.length - 1)
+    {
+      reel4CurrentSymbol = reel4CurrentSymbol + 1
+    }
+    else
+    {
+      reel4CurrentSymbol = 0;
+    }
+
+    if(reel5CurrentSymbol + 1 != reel5.children.length - 1)
+    {
+      reel5CurrentSymbol = reel5CurrentSymbol + 1
+    }
+    else
+    {
+      reel5CurrentSymbol = 0;
+    }
+    // console.log(reel5CurrentSymbol);
+
+  }
+
+  // animals.x += animals.vx;
+  // animals.y += animals.vy;
+  // cat.vx = 1;
+  // cat.x += cat.vx;
+}
+//Start the game loop
+// gameLoop();
+
+
+
+
+//The `randomInt` helper function
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
+
+
+function keyboard(keyCode) {
+  var key = {};
+  key.code = keyCode;
+  key.isDown = false;
+  key.isUp = true;
+  key.press = undefined;
+  key.release = undefined;
+  //The `downHandler`
+  key.downHandler = function(event) {
+    if (event.keyCode === key.code) {
+      if (key.isUp && key.press) key.press();
+      key.isDown = true;
+      key.isUp = false;
+    }
+    event.preventDefault();
+  };
+
+  //The `upHandler`
+  key.upHandler = function(event) {
+    if (event.keyCode === key.code) {
+      if (key.isDown && key.release) key.release();
+      key.isDown = false;
+      key.isUp = true;
+    }
+    event.preventDefault();
+  };
+
+  //Attach event listeners
+  window.addEventListener(
+    "keydown", key.downHandler.bind(key), false
+  );
+  window.addEventListener(
+    "keyup", key.upHandler.bind(key), false
+  );
+  return key;
+}
+
+
+function onClick () {
+    // cat.scale.x *= 1.25;
+    // cat.scale.y *= 1.25;
+  // console.log(cat.x);
+
+
+}
+
+function onClickUp () {
+    // cat.scale.x *= 1.25;
+    // cat.scale.y *= 1.25;
+  betNum = betNum + 1;
+  console.log("Clicked up button, betNum: ", betNum);
+
+  betNumMsg.text = "$" + betNum.toString() + ".00";
+  renderer.render(stage);
+
+}
+
+function onClickDown () {
+    // cat.scale.x *= 1.25;
+    // cat.scale.y *= 1.25;
+
+  if(betNum - 1 > 0)
+  {
+    betNum = betNum - 1;
+
+  }
+  console.log("Clicked down button, betNum: ", betNum);
+
+  betNumMsg.text = "$" + betNum.toString() + ".00";
+  renderer.render(stage);
+
+
+}
+
+function onClickSpin () {
+    // cat.scale.x *= 1.25;
+    // cat.scale.y *= 1.25;
+  console.log("Clicked spin button");
+  
+
+
+
+  if(balanceNum - betNum < 0)
+  {
+    console.log("Not enough balance!");
+    return;  
+  }
+  else
+  {
+    balanceNum = balanceNum - betNum;
+    balaceNumMsg.text = "$"+balanceNum+".00";
+
+    reel1CurrentGeneratedSpinningRound = randomInt(1, 15);
+    reel2CurrentGeneratedSpinningRound = randomInt(1, 15);
+    reel3CurrentGeneratedSpinningRound = randomInt(1, 15);
+    reel4CurrentGeneratedSpinningRound = randomInt(1, 15);
+    reel5CurrentGeneratedSpinningRound = randomInt(1, 15);
+
+    currentMaxGeneratedSpinningRound = Math.max(reel1CurrentGeneratedSpinningRound, reel2CurrentGeneratedSpinningRound, reel3CurrentGeneratedSpinningRound
+    ,reel4CurrentGeneratedSpinningRound,reel5CurrentGeneratedSpinningRound);
+
+    // console.log("reel1CurrentGeneratedSpinningRound: ", reel1CurrentGeneratedSpinningRound);
+    // console.log("reel2CurrentGeneratedSpinningRound: ", reel2CurrentGeneratedSpinningRound);
+    // console.log("reel3CurrentGeneratedSpinningRound: ", reel3CurrentGeneratedSpinningRound);
+    // console.log("reel4CurrentGeneratedSpinningRound: ", reel4CurrentGeneratedSpinningRound);
+    // console.log("reel5CurrentGeneratedSpinningRound: ", reel5CurrentGeneratedSpinningRound);
+    // console.log("currentMaxGeneratedSpinningRound: ", currentMaxGeneratedSpinningRound);
+
+
+
+    spinning = 1;
+
+
+
+    renderer.render(stage);
+
+  }
+
+
+
+
+
+}
+
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+//Tell the `renderer` to `render` the `stage`
+// renderer.render(stage);
+  </script>
+</body>
+</html>
