@@ -9,6 +9,7 @@
 
 </head>
   <script src="pixi.min.js"></script>
+  <script src="pixi-audio.js"></script>
 <body>
   <script type="text/javascript">
 
@@ -49,6 +50,49 @@ document.body.appendChild(renderer.view);
 //Create a container object called the `stage`
 var stage = new Container();
 // stage.addChild(rocket);
+
+
+// PIXI.loader.add([
+//   {name:"AwesomeMusic", url:"./Sound/Example.ogg"}
+// ]).load(function(){
+//   var awesomeMusic = PIXI.audioManager.getAudio('AwesomeMusic');
+//   awesomeMusic.play();
+// });
+
+
+var bgMusic, upButtonMusic, downButtonMusic, SpinButtonMusic;
+var snowflakeWinMusic, sunWinMusic, sandglassWinMusic, victoryWinMusic, royalWinMusic;
+var allWinMusic;
+// http://www.bigsoundbank.com/sound-0267-sea-waves-and-seagulls.html
+PIXI.loader.add([
+  {name:"background", url:"./Sound/Background.ogg"}
+, {name:"up", url:"./Sound/UpButtonSound.ogg"}
+, {name:"down", url:"./Sound/DownButtonSound.ogg"}
+, {name:"spin", url:"./Sound/SpinButtonSound.ogg"}
+
+, {name:"royalwin", url:"./Sound/royalWinSound.ogg"}
+, {name:"snowflakewin", url:"./Sound/snowflakeWinSound.ogg"}
+, {name:"sunwin", url:"./Sound/SunWinSound.ogg"}
+, {name:"sandglasswin", url:"./Sound/SandGlassWinSound.ogg"}
+, {name:"victorywin", url:"./Sound/victoryWinSound.ogg"}
+
+
+]).load(function(){
+  bgMusic = PIXI.audioManager.getAudio('background');
+  bgMusic.loop = true;
+  // bgMusic.play();  
+  upButtonMusic = PIXI.audioManager.getAudio('up');
+  downButtonMusic = PIXI.audioManager.getAudio('down');
+  SpinButtonMusic = PIXI.audioManager.getAudio('spin');
+
+  royalWinMusic = PIXI.audioManager.getAudio('royalwin');
+  snowflakeWinMusic = PIXI.audioManager.getAudio('snowflakewin');
+  sunWinMusic = PIXI.audioManager.getAudio('sunwin');
+  sandglassWinMusic = PIXI.audioManager.getAudio('sandglasswin');
+  victoryWinMusic = PIXI.audioManager.getAudio('victorywin');
+  allWinMusic = [snowflakeWinMusic, sunWinMusic, sandglassWinMusic, victoryWinMusic, royalWinMusic];
+});
+
 
 loader.add("images/treasureHunter.json").load(setupTextureAtlas);
 
@@ -191,17 +235,28 @@ add("images/Queen.png").
 add("images/Jack.png").
 load(setup);
 
+
+var linePattern1DrawStartX = 400;
+var linePattern1DrawStartY = 300;
+var linePattern1DrawWidth = 100;
+var linePattern1DrawHeight = 100;
+
+
 var cat, hedgehog, tiger, animals, upbutton, downbutton, state;
 var reel1, reel2, reel3, reel4, reel5; 
+var linePattern1Drawer, linePattern2Drawer, linePattern3Drawer, linePattern4Drawer, linePattern5Drawer;
+var allLinePatternDrawers;
 var betNum = 1;
 var balanceNum = 10000;//10000
-var currentSpinPayoutTotal;
+var currentSpinWin = 0;
+var currentSpinPayoutTotal = 0;
 var currentSpinLinePatternWithPay = [0,0,0,0,0];
 var currentSpinPayFromEachPattern = [0,0,0,0,0];
 
 var symbolNames = ["snowflake","sun","sandglass","victory","ace","king","queen","jack"];
 var betNumMsg;
 var balaceNumMsg;
+var currentWinPriceMsg;
 var reel1CurrentSymbol = 0;
 var reel2CurrentSymbol = 0;
 var reel3CurrentSymbol = 0;
@@ -209,6 +264,10 @@ var reel4CurrentSymbol = 0;
 var reel5CurrentSymbol = 0;
 var lineNumber = 3;
 
+var showingWinLines = 0;
+var showWinLineTimer = 0; 
+var currentWinLines = [];
+var currentShowingWinLineNum = 0;
 
 var reel1Layout = [1,5,2,1,6,5,8,5,1,2,3,7,4,5,8,1,4,3,2,5,6];
 var reel2Layout = [5,1,6,3,7,8,1,3,2,4,6,8,5,4,5,3,8,7,5,4,1,7,4,8,4];
@@ -239,15 +298,20 @@ var reel5CurrentGeneratedSpinningRound = -1;
 
 var currentMaxGeneratedSpinningRound = -1;
 
-var symbolWidth = 25;
-var symbolHeight = 25;
-var reel1startX = 50;
-
+var symbolWidth = 100;//25
+var symbolHeight = 100;//25
+var reel1startX = 400;//50
+var reel1startY = 300;
+var spinBtnrectangle;
 
 function setup(){
   // console.log("first ele: ", imageURLs[5]);
 
-
+  // console.log("reel1layout length: ",reel1Layout.length);
+  // console.log("reel2layout length: ",reel2Layout.length);
+  // console.log("reel3layout length: ",reel3Layout.length);
+  // console.log("reel4layout length: ",reel4Layout.length);
+  // console.log("reel5layout length: ",reel5Layout.length);
 
 
 
@@ -258,6 +322,115 @@ function setup(){
   reel4 = new Container();
   reel5 = new Container();
 
+  linePattern1Drawer = new Container();
+  linePattern2Drawer = new Container();
+  linePattern3Drawer = new Container();
+  linePattern4Drawer = new Container();
+  linePattern5Drawer = new Container();
+  allLinePatternDrawers = new Container();
+
+  for(var i=0;i<5;i++)
+  {
+    var rectangle = new PIXI.Graphics();
+    rectangle.beginFill(0xffff00);
+    rectangle.lineStyle(2, 0xffff00, 1);
+    rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY + symbolHeight , linePattern1DrawWidth , linePattern1DrawHeight);
+    rectangle.endFill();
+    linePattern1Drawer.addChild(rectangle);
+    // stage.addChild(winrectangle);    
+  }
+  linePattern1Drawer.visible = false;
+  
+  allLinePatternDrawers.addChild(linePattern1Drawer);
+  // stage.addChild(linePattern1Drawer);
+
+
+  for(var i=0;i<5;i++)
+  {
+    var rectangle = new PIXI.Graphics();
+    rectangle.beginFill(0xff0000);
+    rectangle.lineStyle(2, 0xff0000, 1);
+    rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY , linePattern1DrawWidth , linePattern1DrawHeight);
+    rectangle.endFill();
+    linePattern2Drawer.addChild(rectangle);
+    // stage.addChild(winrectangle);    
+  }
+  linePattern2Drawer.visible = false;
+  
+  allLinePatternDrawers.addChild(linePattern2Drawer);
+  // stage.addChild(linePattern2Drawer);
+
+  for(var i=0;i<5;i++)
+  {
+    var rectangle = new PIXI.Graphics();
+    rectangle.beginFill(0x00ff00);
+    rectangle.lineStyle(2, 0x00ff00, 1);
+    rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY + symbolHeight * 2, linePattern1DrawWidth , linePattern1DrawHeight);
+    rectangle.endFill();
+    linePattern3Drawer.addChild(rectangle);
+    // stage.addChild(winrectangle);    
+  }
+  linePattern3Drawer.visible = false;
+  
+  allLinePatternDrawers.addChild(linePattern3Drawer);
+  // stage.addChild(linePattern3Drawer);
+
+  for(var i=0;i<5;i++)
+  {
+    var rectangle = new PIXI.Graphics();
+    rectangle.beginFill(0xFF4500);
+    rectangle.lineStyle(2, 0xFF4500	, 1);
+    if(i==0 || i==4)
+    {
+      rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY, linePattern1DrawWidth , linePattern1DrawHeight);
+    }
+    else if(i==1 || i==3)
+    {
+      rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY + symbolHeight, linePattern1DrawWidth , linePattern1DrawHeight);
+    }
+    else
+    {
+      rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY + symbolHeight * 2, linePattern1DrawWidth , linePattern1DrawHeight);
+    }
+
+    rectangle.endFill();
+    linePattern4Drawer.addChild(rectangle);
+    // stage.addChild(winrectangle);    
+  }
+    linePattern4Drawer.visible = false;
+
+  allLinePatternDrawers.addChild(linePattern4Drawer);  
+  // stage.addChild(linePattern4Drawer);
+
+  for(var i=0;i<5;i++)
+  {
+    var rectangle = new PIXI.Graphics();
+    rectangle.beginFill(0x006400);
+    rectangle.lineStyle(2, 0x006400	, 1);
+    if(i==0 || i==4)
+    {
+      rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY + symbolHeight * 2, linePattern1DrawWidth , linePattern1DrawHeight);
+    }
+    else if(i==1 || i==3)
+    {
+      rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY + symbolHeight, linePattern1DrawWidth , linePattern1DrawHeight);
+    }
+    else
+    {
+      rectangle.drawRect(linePattern1DrawStartX + i * linePattern1DrawWidth, reel1startY, linePattern1DrawWidth , linePattern1DrawHeight);
+    }
+
+    rectangle.endFill();
+    linePattern5Drawer.addChild(rectangle);
+    // stage.addChild(winrectangle);    
+  }
+  linePattern5Drawer.visible = false;
+  allLinePatternDrawers.addChild(linePattern5Drawer);
+
+
+  stage.addChild(allLinePatternDrawers);
+
+
 
   for(var i=0; i< reel1Layout.length;i++)
   {
@@ -266,7 +439,7 @@ function setup(){
     currentSymbol.width = symbolWidth;
     currentSymbol.height = symbolHeight;
     currentSymbol.x = reel1startX;
-    currentSymbol.y = 250 + i * symbolHeight;
+    currentSymbol.y = reel1startY + i * symbolHeight;
     if(i==0 || i==1 || i==2)
     {
       currentSymbol.visible = true;
@@ -278,6 +451,7 @@ function setup(){
     reel1.addChild(currentSymbol);
     // console.log("ele: ", reel1Layout[i]);
   }
+  // console.log("reel1 length: ", reel1.children.length);
 
 
   for(var i=0; i< reel2Layout.length;i++)
@@ -287,7 +461,7 @@ function setup(){
     currentSymbol.width = symbolWidth;
     currentSymbol.height = symbolHeight;
     currentSymbol.x = reel1startX + symbolWidth * 1;
-    currentSymbol.y = 250 + i * symbolHeight;
+    currentSymbol.y = reel1startY + i * symbolHeight;
     if(i==0 || i==1 || i==2)
     {
       currentSymbol.visible = true;
@@ -301,6 +475,7 @@ function setup(){
     reel2.addChild(currentSymbol);
     // console.log("ele: ", reel1Layout[i]);
   }
+  // console.log("reel2 length: ", reel2.children.length);
 
   for(var i=0; i< reel3Layout.length;i++)
   {
@@ -309,7 +484,7 @@ function setup(){
     currentSymbol.width = symbolWidth;
     currentSymbol.height = symbolHeight;
     currentSymbol.x = reel1startX + symbolWidth * 2;
-    currentSymbol.y = 250 + i * symbolHeight;
+    currentSymbol.y = reel1startY + i * symbolHeight;
     if(i==0 || i==1 || i==2)
     {
       currentSymbol.visible = true;
@@ -323,6 +498,7 @@ function setup(){
     reel3.addChild(currentSymbol);
     // console.log("ele: ", reel1Layout[i]);
   }
+  // console.log("reel3 length: ", reel3.children.length);
 
 
   for(var i=0; i< reel4Layout.length;i++)
@@ -332,7 +508,7 @@ function setup(){
     currentSymbol.width = symbolWidth;
     currentSymbol.height = symbolHeight;
     currentSymbol.x = reel1startX + symbolWidth * 3;
-    currentSymbol.y = 250 + i * symbolHeight;
+    currentSymbol.y = reel1startY + i * symbolHeight;
     if(i==0 || i==1 || i==2)
     {
       currentSymbol.visible = true;
@@ -346,7 +522,7 @@ function setup(){
     reel4.addChild(currentSymbol);
     // console.log("ele: ", reel1Layout[i]);
   }  
-
+  // console.log("reel4 length: ", reel4.children.length);
 
   for(var i=0; i< reel5Layout.length;i++)
   {
@@ -355,7 +531,7 @@ function setup(){
     currentSymbol.width = symbolWidth;
     currentSymbol.height = symbolHeight;
     currentSymbol.x = reel1startX + symbolWidth * 4;
-    currentSymbol.y = 250 + i * symbolHeight;
+    currentSymbol.y = reel1startY + i * symbolHeight;
     if(i==0 || i==1 || i==2)
     {
       currentSymbol.visible = true;
@@ -369,28 +545,9 @@ function setup(){
     reel5.addChild(currentSymbol);
     // console.log("ele: ", reel1Layout[i]);
   }    
+  // console.log("reel5 length: ", reel5.children.length);
 
-  // for(var i=0;i<reel1.children.length;i++)
-  // {
-  //   var temp = reel1.children[i];
-  //   if(i == reel1CurrentSymbol)
-  //   {
-  //     temp.visible = true;
-  //   }
-  //   else if(i == reel1CurrentSymbol + 1)
-  //   {
-  //     temp.visible = true;
-  //   }
-  //   else if(i == reel1CurrentSymbol + 2)
-  //   {
-  //     temp.visible = true;
-  //   }
-  //   else
-  //   {
-  //     temp.visible = false;
-  //   }
-  //   // console.log("x: "+temp.x);
-  // }
+
 
 
 
@@ -485,7 +642,7 @@ function setup(){
   message.style = {wordWrap: true, wordWrapWidth: 50, wordWrapHeight: 32};
   message.position.set(500+150-25, 50-16);
 
-  var currentWinPriceMsg = new PIXI.Text("$0.00",{fontFamily: "Arial", fontSize: 32, fill: "black"});
+  currentWinPriceMsg = new PIXI.Text("$"+currentSpinWin+".00",{fontFamily: "Arial", fontSize: 32, fill: "black"});
   currentWinPriceMsg.style = {wordWrap: true, wordWrapWidth: 50, wordWrapHeight: 32};
   currentWinPriceMsg.position.set(500+150-25, 150-16);
 
@@ -554,7 +711,7 @@ function setup(){
   betNumrectangle.endFill();
   stage.addChild(betNumrectangle);
 
-  var spinBtnrectangle = new PIXI.Graphics();
+  spinBtnrectangle = new PIXI.Graphics();
   spinBtnrectangle.beginFill(0xD3D3D3);
   spinBtnrectangle.lineStyle(2, 0x000000, 1);
   spinBtnrectangle.drawRect(950,0+500+300,300,200);
@@ -685,17 +842,17 @@ function play()
     if(i == reel1Current3Symbols[0])
     {
       temp.visible = true;
-      temp.y = 250;
+      temp.y = reel1startY;
     }
     else if(i == reel1Current3Symbols[1])
     {
       temp.visible = true;
-      temp.y = 250 + symbolHeight;
+      temp.y = reel1startY + symbolHeight;
     }
     else if(i == reel1Current3Symbols[2])
     {
       temp.visible = true;
-      temp.y = 250 + symbolHeight * 2;      
+      temp.y = reel1startY + symbolHeight * 2;      
     }
     else
     {
@@ -713,18 +870,18 @@ function play()
     if(i == reel2Current3Symbols[0])
     {
       temp.visible = true;
-            temp.y = 250;
+            temp.y = reel1startY;
     }
     else if(i == reel2Current3Symbols[1])
     {
       temp.visible = true;
-            temp.y = 250 + symbolHeight;
+            temp.y = reel1startY + symbolHeight;
 
     }
     else if(i == reel2Current3Symbols[2])
     {
       temp.visible = true;
-            temp.y = 250 + symbolHeight * 2;      
+            temp.y = reel1startY + symbolHeight * 2;      
 
     }
     else
@@ -741,19 +898,19 @@ function play()
     if(i == reel3Current3Symbols[0])
     {
       temp.visible = true;
-                  temp.y = 250;
+                  temp.y = reel1startY;
 
     }
     else if(i == reel3Current3Symbols[1])
     {
       temp.visible = true;
-                  temp.y = 250 + symbolHeight;
+                  temp.y = reel1startY + symbolHeight;
 
     }
     else if(i == reel3Current3Symbols[2])
     {
       temp.visible = true;
-                  temp.y = 250 + symbolHeight * 2;      
+                  temp.y = reel1startY + symbolHeight * 2;      
 
     }
     else
@@ -769,19 +926,19 @@ function play()
     if(i == reel4Current3Symbols[0])
     {
       temp.visible = true;
-      temp.y = 250;
+      temp.y = reel1startY;
 
     }
     else if(i == reel4Current3Symbols[1])
     {
       temp.visible = true;
-      temp.y = 250 + symbolHeight;
+      temp.y = reel1startY + symbolHeight;
 
     }
     else if(i == reel4Current3Symbols[2])
     {
       temp.visible = true;
-      temp.y = 250 + symbolHeight * 2;      
+      temp.y = reel1startY + symbolHeight * 2;      
 
     }
     else
@@ -797,19 +954,19 @@ function play()
     if(i == reel5Current3Symbols[0])
     {
       temp.visible = true;
-      temp.y = 250;
+      temp.y = reel1startY;
 
     }
     else if(i == reel5Current3Symbols[1])
     {
       temp.visible = true;
-      temp.y = 250 + symbolHeight;
+      temp.y = reel1startY + symbolHeight;
 
     }
     else if(i == reel5Current3Symbols[2])
     {
       temp.visible = true;
-      temp.y = 250 + symbolHeight * 2;      
+      temp.y = reel1startY + symbolHeight * 2;      
 
     }
     else
@@ -822,10 +979,14 @@ function play()
 
   if(spinning == 1)
   {
-
+    spinBtnrectangle.interactive = false;
+    spinBtnrectangle.buttonMode = false;
     //REEL 1
     if(reel1CurrentSpinningNum < reel1CurrentGeneratedSpinningRound)
     {
+        // console.log(reel1CurrentSymbol);
+
+        // console.log(reel1CurrentSpinningNum);
         if(reel1CurrentSymbol == reel1.children.length - 1)
         {
           reel1Current3Symbols = [0,1,2];
@@ -953,6 +1114,7 @@ function play()
     //REEL 5
     if(reel5CurrentSpinningNum < reel5CurrentGeneratedSpinningRound)
     {
+
         if(reel5CurrentSymbol == reel5.children.length - 1)
         {
           reel5Current3Symbols = [0,1,2];
@@ -989,6 +1151,8 @@ function play()
     )
     {
 
+        console.log("All reels reached max spinning count!");
+
         reel1CurrentSpinningNum = 0;
         reel2CurrentSpinningNum = 0;
         reel3CurrentSpinningNum = 0;
@@ -1001,6 +1165,13 @@ function play()
         currentLinePattern1[2] = reel3Current3Symbols[1];
         currentLinePattern1[3] = reel4Current3Symbols[1];
         currentLinePattern1[4] = reel5Current3Symbols[1];
+        var currentLinePattern1Symbols = [0,0,0,0,0];
+        currentLinePattern1Symbols[0] = reel1Layout[reel1Current3Symbols[1]];
+        currentLinePattern1Symbols[1] = reel2Layout[reel2Current3Symbols[1]];
+        currentLinePattern1Symbols[2] = reel3Layout[reel3Current3Symbols[1]];
+        currentLinePattern1Symbols[3] = reel4Layout[reel4Current3Symbols[1]];
+        currentLinePattern1Symbols[4] = reel5Layout[reel5Current3Symbols[1]];       
+        // console.log(currentLinePattern1Symbols);
 
         var currentLinePattern2 = [0,0,0,0,0];
         currentLinePattern2[0] = reel1Current3Symbols[0];
@@ -1008,13 +1179,28 @@ function play()
         currentLinePattern2[2] = reel3Current3Symbols[0];
         currentLinePattern2[3] = reel4Current3Symbols[0];
         currentLinePattern2[4] = reel5Current3Symbols[0];
+        var currentLinePattern2Symbols = [0,0,0,0,0];
+        currentLinePattern2Symbols[0] = reel1Layout[reel1Current3Symbols[0]];
+        currentLinePattern2Symbols[1] = reel2Layout[reel2Current3Symbols[0]];
+        currentLinePattern2Symbols[2] = reel3Layout[reel3Current3Symbols[0]];
+        currentLinePattern2Symbols[3] = reel4Layout[reel4Current3Symbols[0]];
+        currentLinePattern2Symbols[4] = reel5Layout[reel5Current3Symbols[0]];       
+        // console.log(currentLinePattern2Symbols);
+
 
         var currentLinePattern3 = [0,0,0,0,0];
         currentLinePattern3[0] = reel1Current3Symbols[2];
         currentLinePattern3[1] = reel2Current3Symbols[2];
         currentLinePattern3[2] = reel3Current3Symbols[2];
         currentLinePattern3[3] = reel4Current3Symbols[2];
-        currentLinePattern3[3] = reel5Current3Symbols[2];
+        currentLinePattern3[4] = reel5Current3Symbols[2];
+        var currentLinePattern3Symbols = [0,0,0,0,0];
+        currentLinePattern3Symbols[0] = reel1Layout[reel1Current3Symbols[2]];
+        currentLinePattern3Symbols[1] = reel2Layout[reel2Current3Symbols[2]];
+        currentLinePattern3Symbols[2] = reel3Layout[reel3Current3Symbols[2]];
+        currentLinePattern3Symbols[3] = reel4Layout[reel4Current3Symbols[2]];
+        currentLinePattern3Symbols[4] = reel5Layout[reel5Current3Symbols[2]];       
+        // console.log(currentLinePattern3Symbols);        
 
         var currentLinePattern4 = [0,0,0,0,0];
         currentLinePattern4[0] = reel1Current3Symbols[0];
@@ -1022,16 +1208,133 @@ function play()
         currentLinePattern4[2] = reel3Current3Symbols[2];
         currentLinePattern4[3] = reel4Current3Symbols[1];
         currentLinePattern4[4] = reel5Current3Symbols[0];
+        var currentLinePattern4Symbols = [0,0,0,0,0];
+        currentLinePattern4Symbols[0] = reel1Layout[reel1Current3Symbols[0]];
+        currentLinePattern4Symbols[1] = reel2Layout[reel2Current3Symbols[1]];
+        currentLinePattern4Symbols[2] = reel3Layout[reel3Current3Symbols[2]];
+        currentLinePattern4Symbols[3] = reel4Layout[reel4Current3Symbols[1]];
+        currentLinePattern4Symbols[4] = reel5Layout[reel5Current3Symbols[0]];       
+        // console.log(currentLinePattern4Symbols);              
 
         var currentLinePattern5 = [0,0,0,0,0];
         currentLinePattern5[0] = reel1Current3Symbols[2];
         currentLinePattern5[1] = reel2Current3Symbols[1];
         currentLinePattern5[2] = reel3Current3Symbols[0];
         currentLinePattern5[3] = reel4Current3Symbols[1];
-        currentLinePattern5[4] = reel5Current3Symbols[2];                            
+        currentLinePattern5[4] = reel5Current3Symbols[2];
+        var currentLinePattern5Symbols = [0,0,0,0,0];
+        currentLinePattern5Symbols[0] = reel1Layout[reel1Current3Symbols[2]];
+        currentLinePattern5Symbols[1] = reel2Layout[reel2Current3Symbols[1]];
+        currentLinePattern5Symbols[2] = reel3Layout[reel3Current3Symbols[0]];
+        currentLinePattern5Symbols[3] = reel4Layout[reel4Current3Symbols[1]];
+        currentLinePattern5Symbols[4] = reel5Layout[reel5Current3Symbols[2]];       
+        // console.log(currentLinePattern5Symbols);                 
 
+        // console.log("reel1 current3: ",
+        // reel1Current3Symbols[0],", ",
+        // reel1Current3Symbols[1],", ",
+        // reel1Current3Symbols[2],", ",
+        // );
+
+        // console.log("reel1 current3: ",
+        // reel1Layout[reel1Current3Symbols[0]],", ",
+        // reel1Layout[reel1Current3Symbols[1]],", ",
+        // reel1Layout[reel1Current3Symbols[2]],", ",
+        // );
+
+        // console.log("reel1 current3: ",
+        // symbolNames[reel1Layout[reel1Current3Symbols[0]]],", ",
+        // symbolNames[reel1Layout[reel1Current3Symbols[1]]],", ",
+        // symbolNames[reel1Layout[reel1Current3Symbols[2]]],", ",
+        // );
+
+        // console.log(reel1Layout);
+        // console.log(reel2Layout);
+        // console.log(reel3Layout);
+        // console.log(reel4Layout);
+        // console.log(reel5Layout);
+        // var temp = currentLinePattern1[0];
+        // var temp2 = currentLinePattern1[1];
+
+        // console.log("pattern1 symbol positions: ",
+        // currentLinePattern1[0],", ",
+        // currentLinePattern1[1],", ",
+        // currentLinePattern1[2],", ",
+        // currentLinePattern1[3],", ",
+        // currentLinePattern1[4]
+        // );
+
+        // console.log("pattern1 symbol numbers: ",
+        // reel1Layout[currentLinePattern1[0]],", ",
+        // reel2Layout[currentLinePattern1[1]],", ",
+        // reel3Layout[currentLinePattern1[2]],", ",
+        // reel4Layout[currentLinePattern1[3]],", ",
+        // reel5Layout[currentLinePattern1[4]]
+        // );
+        // var temp2 = reel1Layout[temp] - 1 ;
+        // console.log("pattern1 symbol names: ",
+        // symbolNames[reel1Layout[currentLinePattern1[0]]-1],", ",
+        // symbolNames[reel2Layout[currentLinePattern1[1]]-1],", ",
+        // symbolNames[reel3Layout[currentLinePattern1[2]]-1],", ",
+        // symbolNames[reel4Layout[currentLinePattern1[3]]-1],", ",
+        // symbolNames[reel5Layout[currentLinePattern1[4]]-1]
+        // );
+
+        // console.log("pattern2 symbol names: ",
+        // symbolNames[reel1Layout[currentLinePattern2[0]]-1],", ",
+        // symbolNames[reel2Layout[currentLinePattern2[1]]-1],", ",
+        // symbolNames[reel3Layout[currentLinePattern2[2]]-1],", ",
+        // symbolNames[reel4Layout[currentLinePattern2[3]]-1],", ",
+        // symbolNames[reel5Layout[currentLinePattern2[4]]-1]
+        // );
+
+        // console.log("pattern3 symbol names: ",
+        // symbolNames[reel1Layout[currentLinePattern3[0]]-1],", ",
+        // symbolNames[reel2Layout[currentLinePattern3[1]]-1],", ",
+        // symbolNames[reel3Layout[currentLinePattern3[2]]-1],", ",
+        // symbolNames[reel4Layout[currentLinePattern3[3]]-1],", ",
+        // symbolNames[reel5Layout[currentLinePattern3[4]]-1]
+        // );
+
+        // console.log("pattern4 symbol names: ",
+        // symbolNames[reel1Layout[currentLinePattern4[0]]-1],", ",
+        // symbolNames[reel2Layout[currentLinePattern4[1]]-1],", ",
+        // symbolNames[reel3Layout[currentLinePattern4[2]]-1],", ",
+        // symbolNames[reel4Layout[currentLinePattern4[3]]-1],", ",
+        // symbolNames[reel5Layout[currentLinePattern4[4]]-1]
+        // );      
+
+        // console.log("pattern5 symbol names: ",
+        // symbolNames[reel1Layout[currentLinePattern5[0]]-1],", ",
+        // symbolNames[reel2Layout[currentLinePattern5[1]]-1],", ",
+        // symbolNames[reel3Layout[currentLinePattern5[2]]-1],", ",
+        // symbolNames[reel4Layout[currentLinePattern5[3]]-1],", ",
+        // symbolNames[reel5Layout[currentLinePattern5[4]]-1]
+        // );             
+
+        // console.log("pattern2: ",
+        // symbolNames[reel2Layout[currentLinePattern2[0]]],", ",
+        // symbolNames[reel2Layout[currentLinePattern2[1]]],", ",
+        // symbolNames[reel2Layout[currentLinePattern2[2]]],", ",
+        // symbolNames[reel2Layout[currentLinePattern2[3]]],", ",
+        // symbolNames[reel2Layout[currentLinePattern2[4]]]
+        // );
+        
+        // console.log("pattern3: ",
+        // symbolNames[reel3Layout[currentLinePattern3[0]]],", ",
+        // symbolNames[reel3Layout[currentLinePattern3[1]]],", ",
+        // symbolNames[reel3Layout[currentLinePattern3[2]]],", ",
+        // symbolNames[reel3Layout[currentLinePattern3[3]]],", ",
+        // symbolNames[reel3Layout[currentLinePattern3[4]]]
+        // );
+
+                       
+        var allLinePatternSymbols = [currentLinePattern1Symbols, 
+        currentLinePattern2Symbols, currentLinePattern3Symbols, 
+        currentLinePattern4Symbols, currentLinePattern5Symbols,];
+        
         var allLinePatterns = [currentLinePattern1, currentLinePattern2,currentLinePattern3,currentLinePattern4,currentLinePattern5];
-
+        var allreelLayout = [reel1Layout, reel2Layout, reel3Layout, reel4Layout, reel5Layout];
         var numberOfSnowFlake = 0;
         var numberOfSun = 0;
         var numberOfSandglass = 0;
@@ -1042,36 +1345,170 @@ function play()
         var numberOfJack = 0;
         var numberOfEachSymbol = [0,0,0,0,0,0,0,0];
         var possibleSymbolValueNum = 8;
+        // var WinLine = [];
 
-        for(var i = 0; i < allLinePatterns.length;i++)
+
+        for(var i = 0; i < allLinePatternSymbols.length;i++)
         {
-            for(var a = 0; a < allLinePatterns[i].length; a++)
+            for(var a = 0; a < allLinePatternSymbols[i].length; a++)
             {
-                for(var c=0;c<possibleSymbolValueNum; c++)
+                for(var c = 0; c < possibleSymbolValueNum; c++)
                 {
-                    if(allLinePatterns[i][a] == c+1)
+                    if(allLinePatternSymbols[i][a] == c+1)
                     {
                         numberOfEachSymbol[c] = numberOfEachSymbol[c] + 1;
                         // break;
-                    }
-                }
-
+                    }                    
+                } 
             }
+
+            var hasPay = 0;
             for(var d = 0; d< numberOfEachSymbol.length; d++)
             {
                 if(numberOfEachSymbol[d] >=3)
                 {
-                   console.log("pattern ",i," has one symbol of number more than 3: ",symbolNames[d],", count: ", numberOfEachSymbol[d]);
-                  //  break; 
+                  currentWinLines.push(i);
+                  showingWinLines = 1;
+                  // hasPay = 1;
+                   //allreelLayout   
+                   //currentSpinPayoutTotal 
+                   payout = paySummary[d][numberOfEachSymbol[d]-3]
+                   console.log("pattern ",i+1,
+                               " has one symbol of number more than 3: ",symbolNames[d],
+                               ", count: ", numberOfEachSymbol[d],
+                               ", payout is: ", payout);
+
+                   currentSpinPayoutTotal = currentSpinPayoutTotal + payout;
+
+                  //  if(d<=3)
+                  //  {
+                  //     allWinMusic[d].play();
+                  //  }
+                  //  else
+                  //  {
+                  //     allWinMusic[4].play();
+
+                  //  }
+                   break; 
                 }
-            }
+            }            
+
+
+            // if(hasPay == 1)
+            // {
+            //   currentWinLines.push(i);
+            //   // WinLine[i] = 1;
+            //   //  allLinePatternDrawers.children[i].visible = true;
+            //   // for(var d =0; d < allLinePatternDrawers.children.length; d++)
+            //   // {
+            //   //     if(d == i)
+            //   //     {
+            //   //       allLinePatternDrawers.children[d].visible = true;
+
+            //   //     }
+            //   //     else
+            //   //     {
+            //   //       allLinePatternDrawers.children[d].visible = false;
+
+            //   //     }
+            //   // }
+            // }
             numberOfEachSymbol = [0,0,0,0,0,0,0,0];
+
         }
+
+        console.log(currentWinLines);
+
+
+        console.log("Current Spin pay total: ", currentSpinPayoutTotal);
+        currentSpinWin = currentSpinPayoutTotal;
+
+        currentWinPriceMsg.text = "$"+currentSpinWin+".00";
+        balanceNum = balanceNum + currentSpinWin;
+        // balanceNum
+        balaceNumMsg.text = "$"+balanceNum+".00";
+        currentSpinPayoutTotal = 0;
+        // for(var i = 0; i < allLinePatterns.length;i++)
+        // {
+        //     for(var a = 0; a < allLinePatterns[i].length; a++)
+        //     {
+        //         console.log("Pattern: ",i,", value: ",allLinePatterns[i][a]);
+        //         for(var c=0;c<possibleSymbolValueNum; c++)
+        //         {
+        //             if(allLinePatterns[i][a] == c+1)
+        //             {
+        //                 numberOfEachSymbol[c] = numberOfEachSymbol[c] + 1;
+        //                 // break;
+        //             }
+        //         }
+
+        //     }
+        //     // for(var d = 0; d< numberOfEachSymbol.length; d++)
+        //     // {
+        //     //     if(numberOfEachSymbol[d] >=3)
+        //     //     {
+        //     //        console.log("pattern ",i+1," has one symbol of number more than 3: ",symbolNames[d],", count: ", numberOfEachSymbol[d]);
+        //     //       //  break; 
+        //     //     }
+        //     // }
+        //     // numberOfEachSymbol = [0,0,0,0,0,0,0,0];
+        // }
 
 
         spinning = 0;
+
+        spinBtnrectangle.interactive = true;
+        spinBtnrectangle.buttonMode = true;
+
     }
 
+  }
+  else
+  {
+      if(showingWinLines == 1 && currentShowingWinLineNum <= currentWinLines.length - 1)
+      {
+        if(showWinLineTimer == 0)
+        {
+          // currentShowingWinLineNum
+          console.log("Showing line pattern: ", currentWinLines[currentShowingWinLineNum]);
+
+          for(var i = 0; i< allLinePatternDrawers.children.length; i++)
+          {
+            if(i == currentWinLines[currentShowingWinLineNum])
+            {
+              allLinePatternDrawers.children[i].visible = true;
+              if(i<=3)
+              {
+                allWinMusic[i].play();
+              }
+              else
+              {
+                allWinMusic[4].play();
+              }
+
+            }
+            else
+            {
+              allLinePatternDrawers.children[i].visible = false;
+            }
+          }
+
+          currentShowingWinLineNum = currentShowingWinLineNum + 1;
+          showWinLineTimer = 1;
+        }
+        else
+        {
+          if(showWinLineTimer + 1 < 150)
+          {
+            showWinLineTimer = showWinLineTimer + 1;
+          }
+          else
+          {
+            showWinLineTimer = 0;
+          }
+        }
+        // showWinLineTimer
+      }
   }
 
   // animals.x += animals.vx;
@@ -1142,6 +1579,7 @@ function onClick () {
 function onClickUp () {
     // cat.scale.x *= 1.25;
     // cat.scale.y *= 1.25;
+  upButtonMusic.play();  
   betNum = betNum + 1;
   console.log("Clicked up button, betNum: ", betNum);
 
@@ -1153,7 +1591,7 @@ function onClickUp () {
 function onClickDown () {
     // cat.scale.x *= 1.25;
     // cat.scale.y *= 1.25;
-
+  downButtonMusic.play();
   if(betNum - 1 > 0)
   {
     betNum = betNum - 1;
@@ -1171,7 +1609,7 @@ function onClickSpin () {
     // cat.scale.x *= 1.25;
     // cat.scale.y *= 1.25;
   console.log("Clicked spin button");
-  
+  SpinButtonMusic.play();
 
 
 
@@ -1182,14 +1620,28 @@ function onClickSpin () {
   }
   else
   {
+
+    for(var i=0; i< allWinMusic.length;i++)
+    {
+        temp = allWinMusic[i];
+        temp.stop();
+    }
+
+    for(var i =0; i< allLinePatternDrawers.children.length;i++)
+    {
+        temp = allLinePatternDrawers.children[i];
+        temp.visible = false;
+
+    }
+
     balanceNum = balanceNum - betNum;
     balaceNumMsg.text = "$"+balanceNum+".00";
 
-    reel1CurrentGeneratedSpinningRound = randomInt(1, 100);
-    reel2CurrentGeneratedSpinningRound = randomInt(1, 100);
-    reel3CurrentGeneratedSpinningRound = randomInt(1, 100);
-    reel4CurrentGeneratedSpinningRound = randomInt(1, 100);
-    reel5CurrentGeneratedSpinningRound = randomInt(1, 100);
+    reel1CurrentGeneratedSpinningRound = randomInt(1, 20);
+    reel2CurrentGeneratedSpinningRound = randomInt(1, 20);
+    reel3CurrentGeneratedSpinningRound = randomInt(1, 20);
+    reel4CurrentGeneratedSpinningRound = randomInt(1, 20);
+    reel5CurrentGeneratedSpinningRound = randomInt(1, 20);
 
     // currentMaxGeneratedSpinningRound = Math.max(
     // reel1CurrentGeneratedSpinningRound, 
@@ -1205,11 +1657,14 @@ function onClickSpin () {
     // console.log("reel5CurrentGeneratedSpinningRound: ", reel5CurrentGeneratedSpinningRound);
     // console.log("currentMaxGeneratedSpinningRound: ", currentMaxGeneratedSpinningRound);
 
-
-
+    currentWinLines = [];
+    showingWinLines = 0;
+    currentShowingWinLineNum = 0;
+    showWinLineTimer = 0;
     spinning = 1;
 
-
+  // spinBtnrectangle.interactive = true;
+  // spinBtnrectangle.buttonMode = true;
 
     renderer.render(stage);
 
