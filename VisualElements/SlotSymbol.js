@@ -1,4 +1,4 @@
-function Symbol(generatedTexture, texturex, texturey, texturewidth, textureheight) {
+function SlotSymbol(generatedTexture, texturex, texturey, texturewidth, textureheight, stage) {
   // this.texture = texture;
   // var texture = PIXI.Texture.fromImage(texturePath);
   // texture.x = texturex;
@@ -10,7 +10,15 @@ function Symbol(generatedTexture, texturex, texturey, texturewidth, textureheigh
   this.y = texturey;
   this.width = texturewidth;
   this.height = textureheight;
+  // this.rootstage = stage;
 
+
+  this.texture.x = this.x;
+  this.texture.y = this.y;
+  this.texture.width = this.width;
+  this.texture.height = this.height;
+
+  stage.addChild(generatedTexture);
   // console.log("x:",this.x);
   // console.log("y:",this.y);
   // console.log("width:",this.width);
@@ -24,41 +32,41 @@ function Symbol(generatedTexture, texturex, texturey, texturewidth, textureheigh
   // this.y = y;
   // this.width = width;
   // this.height = height;
-};
+}
 
 // Symbol.prototype = Object.create(PIXI.Sprite.prototype);
 // Symbol.prototype.constructor = Symbol;
 
-// Symbol.prototype.getX = function() {
-//   console.log("x:",this.x);
+// SlotSymbol.prototype.getPosX = function(nextX) {
+//   this.x = nextX;
 // 	// this.viewportX = viewportX;
 // 	// this.far.setViewportX(viewportX);
 // 	// this.mid.setViewportX(viewportX);
 // };
 
-SlotSymbol.prototype.getY = function() {
-  console.log("y:",this.y);
-	// this.viewportX = viewportX;
-	// this.far.setViewportX(viewportX);
-	// this.mid.setViewportX(viewportX);
-};
+// SlotSymbol.prototype.getPosY = function() {
+//   console.log("y:",this.y);
+// 	// this.viewportX = viewportX;
+// 	// this.far.setViewportX(viewportX);
+// 	// this.mid.setViewportX(viewportX);
+// };
 
 
-// Symbol.prototype.getWidth = function() {
+// SlotSymbol.prototype.getWidth = function() {
 //   console.log("width:",this.width);
 // 	// this.viewportX = viewportX;
 // 	// this.far.setViewportX(viewportX);
 // 	// this.mid.setViewportX(viewportX);
 // };
 
-// Symbol.prototype.getHeight = function() {
+// SlotSymbol.prototype.getHeight = function() {
 //   console.log("height:",this.height);
 // 	// this.viewportX = viewportX;
 // 	// this.far.setViewportX(viewportX);
 // 	// this.mid.setViewportX(viewportX);
 // };
 
-// Symbol.prototype.getTexture = function() {
+// SlotSymbol.prototype.getTexture = function() {
 //   console.log("Texture:",this.texture);
 // 	// this.viewportX = viewportX;
 // 	// this.far.setViewportX(viewportX);
