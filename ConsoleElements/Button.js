@@ -21,7 +21,8 @@ function Button(rootStage, x, y, width, height, text, imagePath, onClickFunc)
   // this.btnFunc = clickFunction;
   this.spinBtnrectangle.on('click', onClickFunc); // mouse-only
   this.spinBtnrectangle.on('pointerdown', onClickFunc);
-
+  this.spinBtnrectangle.on('touchend', onClickFunc);
+                            
 
 
 //   spinBtnrectangle.on('click', onClickSpin); // mouse-only  
@@ -54,7 +55,8 @@ function Button(rootStage, x, y, width, height, text, imagePath, onClickFunc)
     currentSymbol.buttonMode = true;
     currentSymbol.on('click', onClickFunc); // mouse-only
     currentSymbol.on('pointerdown', onClickFunc);
-                         
+    currentSymbol.on('touchend', onClickFunc);
+        
     rootStage.addChild(currentSymbol);
     
   }
